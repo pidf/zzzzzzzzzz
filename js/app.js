@@ -1,29 +1,15 @@
-import {
-    DEFAULT_MAX_RESULTS,
-    DEFAULT_HIGHLIGHT_SUBSTRING
-} from "./config.js";
 
-const WORDLIST = "/wl/test.txt";
+import {
+    WORDLIST_URL,
+    MAX_RESULTS,
+    HIGHLIGHT_SUBSTRING
+} from "./settings.js";
 
 const searchInput = document.getElementById("search");
 const resultsElement = document.getElementById("results");
 const countElement = document.getElementById("word-count");
 
-const maxResultsInput =
-    document.getElementById("max-results");
-
-const highlightInput =
-    document.getElementById("highlight-substring");
-
 let words = [];
-
-
-// ================================
-// SETTINGS
-// ================================
-
-maxResultsInput.value = DEFAULT_MAX_RESULTS;
-highlightInput.checked = DEFAULT_HIGHLIGHT_SUBSTRING;
 
 
 // ================================
@@ -32,7 +18,7 @@ highlightInput.checked = DEFAULT_HIGHLIGHT_SUBSTRING;
 
 async function loadWordlist() {
     try {
-        const response = await fetch(WORDLIST);
+        const response = await fetch(WORDLIST_URL);
 
         if (!response.ok) {
             throw new Error("Failed to load wordlist");
@@ -72,19 +58,13 @@ function search(query) {
         return;
     }
 
-    const maxResults =
-        Math.max(
-            1,
-            Number(maxResultsInput.value) || 1
-        );
-
     const matches = [];
 
     for (const word of words) {
         if (word.toLowerCase().includes(query)) {
             matches.push(word);
 
-            if (matches.length >= maxResults) {
+            if (matches.length >= MAX_RESULTS) {
                 break;
             }
         }
@@ -95,7 +75,7 @@ function search(query) {
 
 
 // ================================
-// DISPLAY RESULTS
+// DISPLAY
 // ================================
 
 function displayResults(matches, query) {
@@ -111,9 +91,8 @@ function displayResults(matches, query) {
 
         element.className = "result";
 
-        if (highlightInput.checked) {
-            element.innerHTML =
-                highlight(word, query);
+        if (HIGHLIGHT_SUBSTRING) {
+            element.innerHTML = highlight(word, query);
         } else {
             element.textContent = word;
         }
@@ -135,22 +114,12 @@ function highlight(word, query) {
         return escapeHTML(word);
     }
 
-    const before =
-        word.slice(0, index);
-
-    const match =
-        word.slice(
-            index,
-            index + query.length
-        );
-
-    const after =
-        word.slice(index + query.length);
-
     return (
-        escapeHTML(before) +
-        `<mark>${escapeHTML(match)}</mark>` +
-        escapeHTML(after)
+        escapeHTML(word.slice(0, index)) +
+        `<mark>${escapeHTML(
+            word.slice(index, index + query.length)
+        )}</mark>` +
+        escapeHTML(word.slice(index + query.length))
     );
 }
 
@@ -160,11 +129,8 @@ function highlight(word, query) {
 // ================================
 
 function escapeHTML(text) {
-    const element =
-        document.createElement("div");
-
+    const element = document.createElement("div");
     element.textContent = text;
-
     return element.innerHTML;
 }
 
@@ -174,14 +140,6 @@ function escapeHTML(text) {
 // ================================
 
 searchInput.addEventListener("input", () => {
-    search(searchInput.value);
-});
-
-maxResultsInput.addEventListener("input", () => {
-    search(searchInput.value);
-});
-
-highlightInput.addEventListener("change", () => {
     search(searchInput.value);
 });
 
