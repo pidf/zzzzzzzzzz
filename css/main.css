@@ -15,48 +15,55 @@ h1 {
     color: #888;
 }
 
-.search {
-    margin: 40px 0;
+.focus {
+    margin-top: 40px;
 }
 
 #search {
-    box-sizing: border-box;
     width: 100%;
-    height: 100px;
+    height: 120px;
+    box-sizing: border-box;
+
     background: #181818;
     color: #fff;
+
     border: 1px solid #444;
     padding: 20px;
-    font-size: 32px;
+
+    font-size: 36px;
     outline: none;
 }
 
-button {
+#results {
+    margin-top: 25px;
+}
+
+.result {
+    font-size: 32px;
+    margin: 10px 0;
+}
+
+mark {
+    background: #555;
+    color: #fff;
+}
+
+.settings {
+    margin-top: 80px;
+    padding-top: 25px;
+    border-top: 1px solid #333;
+}
+
+.settings label {
+    display: block;
+    margin: 15px 0;
+}
+
+#max-results {
+    width: 70px;
+    margin-left: 10px;
     background: #181818;
-    color: #eee;
+    color: #fff;
     border: 1px solid #444;
-    padding: 10px 14px;
-    margin: 4px;
-    cursor: pointer;
-}
-
-button:hover {
-    background: #252525;
-}
-
-#search-button {
-    margin-top: 8px;
-    font-size: 18px;
-}
-
-section {
-    margin: 35px 0;
-}
-
-footer {
-    margin-top: 60px;
-}
-
-a {
-    color: #aaa;
+    padding: 6px;
 }

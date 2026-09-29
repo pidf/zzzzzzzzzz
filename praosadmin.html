@@ -12,67 +12,55 @@
 <body>
 
     <main>
+
+        <!-- FOCUS MODE -->
+
         <header>
             <h1>cheatgram</h1>
             <p id="word-count">loading wordlist...</p>
         </header>
 
-        <section class="search">
+        <section class="focus">
             <input
                 id="search"
                 type="text"
-                placeholder="search for a substring..."
+                placeholder="search..."
                 autocomplete="off"
                 autofocus
             >
 
-            <button id="search-button">search</button>
-
             <div id="results"></div>
         </section>
 
-        <section class="tools">
-            <h2>tools</h2>
 
-            <div class="buttons">
-                <button>random word</button>
-                <button>wordlist</button>
-                <button>categories</button>
-                <button>history</button>
-                <button>statistics</button>
-                <button>settings</button>
-            </div>
+        <!-- SETTINGS -->
+
+        <section class="settings">
+
+            <h2>settings</h2>
+
+            <label>
+                results to display
+                <input
+                    id="max-results"
+                    type="number"
+                    min="1"
+                    value="1"
+                >
+            </label>
+
+            <label>
+                <input
+                    id="highlight-substring"
+                    type="checkbox"
+                    checked
+                >
+
+                highlight substring
+            </label>
+
         </section>
 
-        <section class="categories">
-            <h2>categories</h2>
-
-            <div class="buttons">
-                <button>all words</button>
-                <button>short words</button>
-                <button>long words</button>
-                <button>common words</button>
-                <button>rare words</button>
-                <button>custom</button>
-            </div>
-        </section>
-
-        <section class="extra">
-            <h2>other shit</h2>
-
-            <div class="buttons">
-                <button>word length</button>
-                <button>starts with</button>
-                <button>ends with</button>
-                <button>exact match</button>
-                <button>export</button>
-                <button>import</button>
-            </div>
-        </section>
-
-        <footer>
-            <a href="/praosadmin.html">praosadmin</a>
-        </footer>
     </main>
 
     <script type="module" src="js/app.js"></script>
