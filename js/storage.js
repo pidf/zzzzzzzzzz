@@ -64,15 +64,15 @@ async function loadWordlist() {
 
 
 // ================================
-// SEARCH
+// SUBMIT QUERY
 // ================================
 
-function search() {
+function submitQuery() {
     const query =
         searchInput.value.trim().toLowerCase();
 
     if (!query) {
-        resultsElement.innerHTML = "";
+        resultsElement.textContent = "enter a query";
         return;
     }
 
@@ -88,42 +88,41 @@ function search() {
         }
     }
 
-    displayResults(matches, query);
-}
-
-
-// ================================
-// DISPLAY RESULTS
-// ================================
-
-function displayResults(matches, query) {
-    resultsElement.innerHTML = "";
-
     if (matches.length === 0) {
         resultsElement.textContent = "no matches";
         return;
     }
 
-    for (const word of matches) {
-        const element =
-            document.createElement("div");
+    // Use the first result.
+    const word = matches[0];
 
-        element.className = "result";
+    displayResult(word, query);
 
-        if (HIGHLIGHT_SUBSTRING) {
-            element.innerHTML =
-                highlight(word, query);
-        } else {
-            element.textContent = word;
-        }
+    // Immediately move it into the used bag.
+    useWord(word);
+}
 
-        resultsElement.appendChild(element);
 
-        // Clicking a result uses it.
-        element.addEventListener("click", () => {
-            useWord(word);
-        });
+// ================================
+// DISPLAY RESULT
+// ================================
+
+function displayResult(word, query) {
+    resultsElement.innerHTML = "";
+
+    const element =
+        document.createElement("div");
+
+    element.className = "result";
+
+    if (HIGHLIGHT_SUBSTRING) {
+        element.innerHTML =
+            highlight(word, query);
+    } else {
+        element.textContent = word;
     }
+
+    resultsElement.appendChild(element);
 }
 
 
@@ -139,17 +138,12 @@ function useWord(word) {
         return;
     }
 
-    // Remove from available pool.
     availableWords.splice(index, 1);
 
-    // Put into used bag.
     addUsedWord(word, usedWords);
 
     displayUsedWords();
     updateCount();
-
-    // Clear current result.
-    resultsElement.innerHTML = "";
 }
 
 
@@ -193,7 +187,7 @@ function takeBackEverything() {
 
 
 // ================================
-// USED WORD DISPLAY
+// DISPLAY USED WORDS
 // ================================
 
 function displayUsedWords() {
@@ -221,7 +215,6 @@ function displayUsedWords() {
             document.createElement("button");
 
         button.textContent = "↩";
-
         button.title = "put word back";
 
         button.addEventListener(
@@ -263,17 +256,13 @@ function highlight(word, query) {
     }
 
     return (
-        escapeHTML(
-            word.slice(0, index)
-        ) +
-
+        escapeHTML(word.slice(0, index)) +
         `<mark>${escapeHTML(
             word.slice(
                 index,
                 index + query.length
             )
         )}</mark>` +
-
         escapeHTML(
             word.slice(index + query.length)
         )
@@ -296,7 +285,7 @@ function escapeHTML(text) {
 
 
 // ================================
-// ENTER = SEARCH
+// ENTER = SUBMIT QUERY
 // ================================
 
 searchInput.addEventListener(
@@ -304,21 +293,21 @@ searchInput.addEventListener(
     event => {
         if (event.key === "Enter") {
             event.preventDefault();
-            search();
+            submitQuery();
         }
     }
 );
 
 
 // ================================
-// NUMBER = SEARCH IN FOCUS MODE
+// NUMBER = SUBMIT QUERY
+// ONLY OUTSIDE TEXT INPUT
 // ================================
 
 document.addEventListener(
     "keydown",
     event => {
 
-        // Never steal number keys from text inputs.
         if (
             event.target.tagName === "INPUT" ||
             event.target.tagName === "TEXTAREA"
@@ -326,16 +315,15 @@ document.addEventListener(
             return;
         }
 
-        // 0-9 triggers search.
         if (/^[0-9]$/.test(event.key)) {
-            search();
+            submitQuery();
         }
     }
 );
 
 
 // ================================
-// TAKE ALL BACK BUTTON
+// PUT ALL BACK
 // ================================
 
 const takeBackAllButton =

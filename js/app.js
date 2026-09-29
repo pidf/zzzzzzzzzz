@@ -139,10 +139,12 @@ function escapeHTML(text) {
 // INPUT
 // ================================
 
-searchInput.addEventListener("input", () => {
-    search(searchInput.value);
+searchInput.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        submitQuery();
+    }
 });
-
 
 // ================================
 // START
