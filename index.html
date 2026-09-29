@@ -6,46 +6,583 @@
     <title>cheatgram</title>
 
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            background: #111;
+            color: #eee;
+        }
+
         body {
+            margin: 0;
+            padding: 32px;
             background: #111;
             color: #eee;
             font-family: Arial, sans-serif;
-            padding: 40px;
         }
 
-        code {
+        main {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        #count {
+            margin-bottom: 32px;
             color: #aaa;
+        }
+
+        #search {
+            width: 100%;
+            height: 90px;
+            padding: 16px 20px;
+            border: 2px solid #444;
+            border-radius: 8px;
+            outline: none;
+            background: #181818;
+            color: #fff;
+            font-size: 32px;
+        }
+
+        #search:focus {
+            border-color: #777;
+        }
+
+        #result {
+            min-height: 70px;
+            margin-top: 24px;
+            font-size: 42px;
+            word-break: break-word;
+        }
+
+        .message {
+            color: #888;
+            font-size: 24px;
+        }
+
+        mark {
+            padding: 0 2px;
+            border-radius: 2px;
+            background: #eee;
+            color: #111;
+        }
+
+        .spacer {
+            height: 420px;
+        }
+
+        section {
+            border-top: 1px solid #333;
+            padding-top: 24px;
+            margin-top: 24px;
+        }
+
+        h2 {
+            margin: 0 0 20px;
+            font-size: 20px;
+        }
+
+        .setting {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #ccc;
+        }
+
+        #resultLimit {
+            width: 80px;
+            padding: 8px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background: #181818;
+            color: #fff;
+            font-size: 16px;
+        }
+
+        #results {
+            margin-top: 20px;
+        }
+
+        .result-item {
+            padding: 8px 0;
+            font-size: 24px;
+        }
+
+        #used {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .used-word {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 22px;
+        }
+
+        .used-word span {
+            text-decoration: line-through;
+            color: #888;
+            word-break: break-word;
+        }
+
+        button {
+            padding: 6px 10px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background: #181818;
+            color: #eee;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        button:hover {
+            background: #252525;
+        }
+
+        #putAllBack {
+            margin-top: 20px;
+        }
+
+        .empty {
+            color: #777;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 20px;
+            }
+
+            #search {
+                height: 75px;
+                font-size: 25px;
+            }
+
+            #result {
+                font-size: 34px;
+            }
         }
     </style>
 </head>
 
 <body>
-    <p>
-        hi if you're a stranger you're very likely to see the cheat
-        but if you're authorized just put your key in the url like so...
-    </p>
+    <main>
+        <h1>cheatgram</h1>
 
-    <p>
-        <code>cheatgram.vercel.app/sixsevenhahafunny.html <---- dont forget .html </code>
-    </p>
+        <div id="count">loading wordlist...</div>
 
-    <p>
-        ok bye
-    </p>
+        <input
+            id="search"
+            type="text"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="search..."
+            aria-label="Search"
+        >
 
-    <p>
-        and dont ban me im just a bebeh ok? UwU
-    </p>
+        <div id="result"></div>
 
-    <p>
-        made by mys
-    </p>
+        <div id="results"></div>
 
-    <p>
-        if you're an admin or a leaker. genuinely, what can you do against us? 
-    </p>
+        <div class="spacer"></div>
 
+        <section>
+            <h2>settings</h2>
 
-</section>
+            <div class="setting">
+                <label for="resultLimit">
+                    results to display:
+                    <input
+                        id="resultLimit"
+                        type="number"
+                        min="1"
+                        step="1"
+                        value="1"
+                    >
+                </label>
+            </div>
+
+            <div class="setting">
+                <label>
+                    <input id="highlightSubstring" type="checkbox" checked>
+                    highlight substring
+                </label>
+            </div>
+        </section>
+
+        <section>
+            <h2>used</h2>
+
+            <div id="used"></div>
+
+            <button id="putAllBack" type="button">put all back</button>
+        </section>
+    </main>
+
+    <script>
+        const WORDLIST_URL = "https://zzzzzzzzzz-five.vercel.app/wl/test.txt";
+        const STORAGE_KEY = "cheatgram-used-words";
+
+        let wordPool = [];
+        let usedWords = [];
+        let lastMatches = [];
+
+        const searchInput = document.getElementById("search");
+        const resultElement = document.getElementById("result");
+        const resultsElement = document.getElementById("results");
+        const usedElement = document.getElementById("used");
+        const countElement = document.getElementById("count");
+        const resultLimitElement = document.getElementById("resultLimit");
+        const highlightElement = document.getElementById("highlightSubstring");
+        const putAllBackButton = document.getElementById("putAllBack");
+
+        function loadUsedWords() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+
+                if (!saved) {
+                    usedWords = [];
+                    return;
+                }
+
+                const parsed = JSON.parse(saved);
+
+                if (Array.isArray(parsed)) {
+                    usedWords = [...new Set(
+                        parsed.filter(word => typeof word === "string")
+                    )];
+                } else {
+                    usedWords = [];
+                }
+            } catch {
+                usedWords = [];
+            }
+        }
+
+        function saveUsedWords() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(usedWords));
+        }
+
+        async function loadWordlist() {
+            try {
+                const response = await fetch(WORDLIST_URL);
+
+                if (!response.ok) {
+                    throw new Error("Failed to load wordlist");
+                }
+
+                const text = await response.text();
+
+                const uniqueWords = [];
+                const seen = new Set();
+
+                for (const line of text.split(/\r?\n/)) {
+                    const word = line.trim();
+
+                    if (!word) {
+                        continue;
+                    }
+
+                    if (seen.has(word)) {
+                        continue;
+                    }
+
+                    seen.add(word);
+                    uniqueWords.push(word);
+                }
+
+                const usedSet = new Set(usedWords);
+
+                wordPool = uniqueWords.filter(word => !usedSet.has(word));
+
+                updateCount();
+                displayUsedWords();
+            } catch (error) {
+                countElement.textContent = "failed to load wordlist";
+                console.error(error);
+            }
+        }
+
+        function updateCount() {
+            countElement.textContent = `${wordPool.length} words available`;
+        }
+
+        function escapeHTML(value) {
+            return value
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function highlight(word, query) {
+            const lowerWord = word.toLowerCase();
+            const lowerQuery = query.toLowerCase();
+
+            const index = lowerWord.indexOf(lowerQuery);
+
+            if (
+                !highlightElement.checked ||
+                !query ||
+                index === -1
+            ) {
+                return escapeHTML(word);
+            }
+
+            const before = word.slice(0, index);
+            const match = word.slice(index, index + query.length);
+            const after = word.slice(index + query.length);
+
+            return (
+                escapeHTML(before) +
+                "<mark>" +
+                escapeHTML(match) +
+                "</mark>" +
+                escapeHTML(after)
+            );
+        }
+
+        function displayResult(word, query) {
+            if (!word) {
+                resultElement.textContent = "";
+                return;
+            }
+
+            resultElement.innerHTML = highlight(word, query);
+        }
+
+        function displayMatches(matches, query) {
+            resultsElement.innerHTML = "";
+
+            if (matches.length <= 1) {
+                return;
+            }
+
+            for (const word of matches) {
+                const item = document.createElement("div");
+                item.className = "result-item";
+                item.innerHTML = highlight(word, query);
+                resultsElement.appendChild(item);
+            }
+        }
+
+        function submitQuery() {
+            const query = searchInput.value.trim();
+
+            resultsElement.innerHTML = "";
+
+            if (!query) {
+                resultElement.innerHTML =
+                    '<span class="message">enter a query</span>';
+                lastMatches = [];
+                return;
+            }
+
+            const lowerQuery = query.toLowerCase();
+
+            const matches = wordPool.filter(word =>
+                word.toLowerCase().includes(lowerQuery)
+            );
+
+            const limit = Math.max(
+                1,
+                parseInt(resultLimitElement.value, 10) || 1
+            );
+
+            lastMatches = matches.slice(0, limit);
+
+            if (matches.length === 0) {
+                resultElement.innerHTML =
+                    '<span class="message">no matches</span>';
+                return;
+            }
+
+            /*
+             * The first match is always consumed, regardless of
+             * how many results are configured to display.
+             */
+            const selectedWord = matches[0];
+
+            displayResult(selectedWord, query);
+
+            displayMatches(lastMatches, query);
+
+            useWord(selectedWord);
+        }
+
+        function useWord(word) {
+            const index = wordPool.indexOf(word);
+
+            if (index === -1) {
+                return;
+            }
+
+            wordPool.splice(index, 1);
+
+            usedWords.push(word);
+
+            saveUsedWords();
+            updateCount();
+            displayUsedWords();
+        }
+
+        function takeBack(word) {
+            const index = usedWords.indexOf(word);
+
+            if (index === -1) {
+                return;
+            }
+
+            usedWords.splice(index, 1);
+
+            if (!wordPool.includes(word)) {
+                wordPool.push(word);
+            }
+
+            saveUsedWords();
+            updateCount();
+            displayUsedWords();
+        }
+
+        function takeBackEverything() {
+            for (const word of usedWords) {
+                if (!wordPool.includes(word)) {
+                    wordPool.push(word);
+                }
+            }
+
+            usedWords = [];
+
+            saveUsedWords();
+            updateCount();
+            displayUsedWords();
+        }
+
+        function displayUsedWords() {
+            usedElement.innerHTML = "";
+
+            if (usedWords.length === 0) {
+                const empty = document.createElement("div");
+                empty.className = "empty";
+                empty.textContent = "no used words";
+                usedElement.appendChild(empty);
+                return;
+            }
+
+            for (const word of usedWords) {
+                const row = document.createElement("div");
+                row.className = "used-word";
+
+                const wordElement = document.createElement("span");
+                wordElement.textContent = word;
+
+                const backButton = document.createElement("button");
+                backButton.type = "button";
+                backButton.textContent = "↩";
+                backButton.title = `Return ${word}`;
+                backButton.setAttribute(
+                    "aria-label",
+                    `Return ${word}`
+                );
+
+                backButton.addEventListener("click", () => {
+                    takeBack(word);
+                });
+
+                row.appendChild(wordElement);
+                row.appendChild(backButton);
+
+                usedElement.appendChild(row);
+            }
+        }
+
+        searchInput.addEventListener("keydown", event => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                submitQuery();
+            }
+        });
+
+        document.addEventListener("keydown", event => {
+            const activeElement = document.activeElement;
+
+            const isTyping =
+                activeElement &&
+                (
+                    activeElement.tagName === "INPUT" ||
+                    activeElement.tagName === "TEXTAREA"
+                );
+
+            if (isTyping) {
+                return;
+            }
+
+            if (/^[0-9]$/.test(event.key)) {
+                submitQuery();
+            }
+        });
+
+        highlightElement.addEventListener("change", () => {
+            if (lastMatches.length > 0) {
+                const query = searchInput.value.trim();
+
+                if (query) {
+                    displayResult(lastMatches[0], query);
+                    displayMatches(lastMatches, query);
+                }
+            }
+        });
+
+        resultLimitElement.addEventListener("change", () => {
+            const query = searchInput.value.trim();
+
+            if (!query) {
+                return;
+            }
+
+            /*
+             * Changing this setting does not perform a search.
+             * It only changes the display of the matches from the
+             * most recently submitted query.
+             */
+            const limit = Math.max(
+                1,
+                parseInt(resultLimitElement.value, 10) || 1
+            );
+
+            const matches = wordPool.filter(word =>
+                word.toLowerCase().includes(query.toLowerCase())
+            );
+
+            const displayed = matches.slice(0, limit);
+
+            if (displayed.length > 0) {
+                displayResult(displayed[0], query);
+                displayMatches(displayed, query);
+            } else {
+                resultsElement.innerHTML = "";
+            }
+        });
+
+        putAllBackButton.addEventListener("click", () => {
+            takeBackEverything();
+        });
+
+        loadUsedWords();
+        loadWordlist();
+    </script>
 </body>
 </html>
