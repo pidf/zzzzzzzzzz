@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -110,6 +111,35 @@
             font-size: 16px;
         }
 
+        #externalWordlistUrl {
+            width: 100%;
+            max-width: 600px;
+            padding: 9px 10px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background: #181818;
+            color: #fff;
+            font-size: 16px;
+            outline: none;
+        }
+
+        #externalWordlistUrl:focus {
+            border-color: #777;
+        }
+
+        .wordlist-controls {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .wordlist-status {
+            margin-top: 8px;
+            color: #888;
+            font-size: 14px;
+        }
+
         #results {
             margin-top: 20px;
         }
@@ -220,6 +250,35 @@
                     highlight substring
                 </label>
             </div>
+
+            <div class="setting">
+                <label>
+                    <input id="useExternalWordlist" type="checkbox">
+                    use external wordlist
+                </label>
+
+                <div style="margin-top: 10px;">
+                    <input
+                        id="externalWordlistUrl"
+                        type="url"
+                        autocomplete="off"
+                        placeholder="https://example.com/wordlist.txt"
+                        aria-label="External wordlist URL"
+                    >
+                </div>
+
+                <div class="wordlist-controls">
+                    <button id="loadExternalWordlist" type="button">
+                        load external
+                    </button>
+
+                    <button id="useMainWordlist" type="button">
+                        use main
+                    </button>
+                </div>
+
+                <div id="wordlistStatus" class="wordlist-status"></div>
+            </div>
         </section>
 
         <section>
@@ -232,21 +291,56 @@
     </main>
 
     <script>
-        const WORDLIST_URL = "https://zzzzzzzzzz-five.vercel.app/wl/test.txt";
+        const WORDLIST_URL =
+            "https://zzzzzzzzzz-five.vercel.app/wl/test.txt";
+
         const STORAGE_KEY = "cheatgram-used-words";
+        const EXTERNAL_URL_KEY = "cheatgram-external-wordlist-url";
+        const EXTERNAL_ENABLED_KEY = "cheatgram-external-wordlist-enabled";
 
         let wordPool = [];
         let usedWords = [];
         let lastMatches = [];
 
-        const searchInput = document.getElementById("search");
-        const resultElement = document.getElementById("result");
-        const resultsElement = document.getElementById("results");
-        const usedElement = document.getElementById("used");
-        const countElement = document.getElementById("count");
-        const resultLimitElement = document.getElementById("resultLimit");
-        const highlightElement = document.getElementById("highlightSubstring");
-        const putAllBackButton = document.getElementById("putAllBack");
+        const searchInput =
+            document.getElementById("search");
+
+        const resultElement =
+            document.getElementById("result");
+
+        const resultsElement =
+            document.getElementById("results");
+
+        const usedElement =
+            document.getElementById("used");
+
+        const countElement =
+            document.getElementById("count");
+
+        const resultLimitElement =
+            document.getElementById("resultLimit");
+
+        const highlightElement =
+            document.getElementById("highlightSubstring");
+
+        const putAllBackButton =
+            document.getElementById("putAllBack");
+
+        const useExternalElement =
+            document.getElementById("useExternalWordlist");
+
+        const externalUrlElement =
+            document.getElementById("externalWordlistUrl");
+
+        const loadExternalButton =
+            document.getElementById("loadExternalWordlist");
+
+        const useMainButton =
+            document.getElementById("useMainWordlist");
+
+        const wordlistStatusElement =
+            document.getElementById("wordlistStatus");
+
 
         function loadUsedWords() {
             try {
@@ -271,16 +365,45 @@
             }
         }
 
+
         function saveUsedWords() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(usedWords));
+            localStorage.setItem(
+                STORAGE_KEY,
+                JSON.stringify(usedWords)
+            );
         }
 
+
+        function getActiveWordlistURL() {
+            if (
+                useExternalElement.checked &&
+                externalUrlElement.value.trim()
+            ) {
+                return externalUrlElement.value.trim();
+            }
+
+            return WORDLIST_URL;
+        }
+
+
+        function setStatus(message) {
+            wordlistStatusElement.textContent = message;
+        }
+
+
         async function loadWordlist() {
+            const url = getActiveWordlistURL();
+
+            countElement.textContent = "loading wordlist...";
+            setStatus("loading...");
+
             try {
-                const response = await fetch(WORDLIST_URL);
+                const response = await fetch(url);
 
                 if (!response.ok) {
-                    throw new Error("Failed to load wordlist");
+                    throw new Error(
+                        `Failed to load wordlist (${response.status})`
+                    );
                 }
 
                 const text = await response.text();
@@ -305,19 +428,44 @@
 
                 const usedSet = new Set(usedWords);
 
-                wordPool = uniqueWords.filter(word => !usedSet.has(word));
+                wordPool = uniqueWords.filter(
+                    word => !usedSet.has(word)
+                );
+
+                lastMatches = [];
 
                 updateCount();
                 displayUsedWords();
+
+                if (url === WORDLIST_URL) {
+                    setStatus("using main wordlist");
+                } else {
+                    setStatus(
+                        `using external wordlist · ${uniqueWords.length} words`
+                    );
+                }
+
+                resultElement.innerHTML = "";
+                resultsElement.innerHTML = "";
+
             } catch (error) {
-                countElement.textContent = "failed to load wordlist";
+                countElement.textContent =
+                    "failed to load wordlist";
+
+                setStatus(
+                    "failed to load wordlist"
+                );
+
                 console.error(error);
             }
         }
 
+
         function updateCount() {
-            countElement.textContent = `${wordPool.length} words available`;
+            countElement.textContent =
+                `${wordPool.length} words available`;
         }
+
 
         function escapeHTML(value) {
             return value
@@ -327,6 +475,7 @@
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
         }
+
 
         function highlight(word, query) {
             const lowerWord = word.toLowerCase();
@@ -343,8 +492,13 @@
             }
 
             const before = word.slice(0, index);
-            const match = word.slice(index, index + query.length);
-            const after = word.slice(index + query.length);
+            const match = word.slice(
+                index,
+                index + query.length
+            );
+            const after = word.slice(
+                index + query.length
+            );
 
             return (
                 escapeHTML(before) +
@@ -355,14 +509,17 @@
             );
         }
 
+
         function displayResult(word, query) {
             if (!word) {
                 resultElement.textContent = "";
                 return;
             }
 
-            resultElement.innerHTML = highlight(word, query);
+            resultElement.innerHTML =
+                highlight(word, query);
         }
+
 
         function displayMatches(matches, query) {
             resultsElement.innerHTML = "";
@@ -372,59 +529,82 @@
             }
 
             for (const word of matches) {
-                const item = document.createElement("div");
+                const item =
+                    document.createElement("div");
+
                 item.className = "result-item";
-                item.innerHTML = highlight(word, query);
+
+                item.innerHTML =
+                    highlight(word, query);
+
                 resultsElement.appendChild(item);
             }
         }
 
+
         function submitQuery() {
-            const query = searchInput.value.trim();
+            const query =
+                searchInput.value.trim();
 
             resultsElement.innerHTML = "";
 
             if (!query) {
                 resultElement.innerHTML =
                     '<span class="message">enter a query</span>';
+
                 lastMatches = [];
                 return;
             }
 
-            const lowerQuery = query.toLowerCase();
+            const lowerQuery =
+                query.toLowerCase();
 
-            const matches = wordPool.filter(word =>
-                word.toLowerCase().includes(lowerQuery)
-            );
+            const matches =
+                wordPool.filter(word =>
+                    word.toLowerCase().includes(lowerQuery)
+                );
 
             const limit = Math.max(
                 1,
-                parseInt(resultLimitElement.value, 10) || 1
+                parseInt(
+                    resultLimitElement.value,
+                    10
+                ) || 1
             );
 
-            lastMatches = matches.slice(0, limit);
+            lastMatches =
+                matches.slice(0, limit);
 
             if (matches.length === 0) {
                 resultElement.innerHTML =
                     '<span class="message">no matches</span>';
+
                 return;
             }
 
             /*
-             * The first match is always consumed, regardless of
-             * how many results are configured to display.
+             * The first match is always consumed,
+             * regardless of how many results are displayed.
              */
             const selectedWord = matches[0];
 
-            displayResult(selectedWord, query);
+            displayResult(
+                selectedWord,
+                query
+            );
 
-            displayMatches(lastMatches, query);
+            displayMatches(
+                lastMatches,
+                query
+            );
 
             useWord(selectedWord);
         }
 
+
         function useWord(word) {
-            const index = wordPool.indexOf(word);
+            const index =
+                wordPool.indexOf(word);
 
             if (index === -1) {
                 return;
@@ -439,8 +619,10 @@
             displayUsedWords();
         }
 
+
         function takeBack(word) {
-            const index = usedWords.indexOf(word);
+            const index =
+                usedWords.indexOf(word);
 
             if (index === -1) {
                 return;
@@ -457,6 +639,7 @@
             displayUsedWords();
         }
 
+
         function takeBackEverything() {
             for (const word of usedWords) {
                 if (!wordPool.includes(word)) {
@@ -471,36 +654,52 @@
             displayUsedWords();
         }
 
+
         function displayUsedWords() {
             usedElement.innerHTML = "";
 
             if (usedWords.length === 0) {
-                const empty = document.createElement("div");
+                const empty =
+                    document.createElement("div");
+
                 empty.className = "empty";
                 empty.textContent = "no used words";
+
                 usedElement.appendChild(empty);
+
                 return;
             }
 
             for (const word of usedWords) {
-                const row = document.createElement("div");
+                const row =
+                    document.createElement("div");
+
                 row.className = "used-word";
 
-                const wordElement = document.createElement("span");
+                const wordElement =
+                    document.createElement("span");
+
                 wordElement.textContent = word;
 
-                const backButton = document.createElement("button");
+                const backButton =
+                    document.createElement("button");
+
                 backButton.type = "button";
                 backButton.textContent = "↩";
-                backButton.title = `Return ${word}`;
+                backButton.title =
+                    `Return ${word}`;
+
                 backButton.setAttribute(
                     "aria-label",
                     `Return ${word}`
                 );
 
-                backButton.addEventListener("click", () => {
-                    takeBack(word);
-                });
+                backButton.addEventListener(
+                    "click",
+                    () => {
+                        takeBack(word);
+                    }
+                );
 
                 row.appendChild(wordElement);
                 row.appendChild(backButton);
@@ -509,77 +708,232 @@
             }
         }
 
-        searchInput.addEventListener("keydown", event => {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                submitQuery();
-            }
-        });
 
-        document.addEventListener("keydown", event => {
-            const activeElement = document.activeElement;
+        /*
+         * External wordlist controls
+         */
 
-            const isTyping =
-                activeElement &&
-                (
-                    activeElement.tagName === "INPUT" ||
-                    activeElement.tagName === "TEXTAREA"
+        externalUrlElement.value =
+            localStorage.getItem(
+                EXTERNAL_URL_KEY
+            ) || "";
+
+        useExternalElement.checked =
+            localStorage.getItem(
+                EXTERNAL_ENABLED_KEY
+            ) === "true";
+
+
+        loadExternalButton.addEventListener(
+            "click",
+            async () => {
+                const url =
+                    externalUrlElement.value.trim();
+
+                if (!url) {
+                    setStatus(
+                        "enter an external wordlist URL"
+                    );
+
+                    return;
+                }
+
+                try {
+                    new URL(url);
+                } catch {
+                    setStatus(
+                        "invalid URL"
+                    );
+
+                    return;
+                }
+
+                localStorage.setItem(
+                    EXTERNAL_URL_KEY,
+                    url
                 );
 
-            if (isTyping) {
-                return;
+                localStorage.setItem(
+                    EXTERNAL_ENABLED_KEY,
+                    "true"
+                );
+
+                useExternalElement.checked = true;
+
+                await loadWordlist();
             }
+        );
 
-            if (/^[0-9]$/.test(event.key)) {
-                submitQuery();
+
+        useMainButton.addEventListener(
+            async () => {
+                useExternalElement.checked = false;
+
+                localStorage.setItem(
+                    EXTERNAL_ENABLED_KEY,
+                    "false"
+                );
+
+                await loadWordlist();
             }
-        });
+        );
 
-        highlightElement.addEventListener("change", () => {
-            if (lastMatches.length > 0) {
-                const query = searchInput.value.trim();
 
-                if (query) {
-                    displayResult(lastMatches[0], query);
-                    displayMatches(lastMatches, query);
+        useExternalElement.addEventListener(
+            "change",
+            async () => {
+                const enabled =
+                    useExternalElement.checked;
+
+                localStorage.setItem(
+                    EXTERNAL_ENABLED_KEY,
+                    String(enabled)
+                );
+
+                if (enabled) {
+                    const url =
+                        externalUrlElement.value.trim();
+
+                    if (!url) {
+                        setStatus(
+                            "enter an external wordlist URL"
+                        );
+
+                        return;
+                    }
+                }
+
+                await loadWordlist();
+            }
+        );
+
+
+        externalUrlElement.addEventListener(
+            "change",
+            () => {
+                localStorage.setItem(
+                    EXTERNAL_URL_KEY,
+                    externalUrlElement.value.trim()
+                );
+            }
+        );
+
+
+        searchInput.addEventListener(
+            "keydown",
+            event => {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    submitQuery();
                 }
             }
-        });
+        );
 
-        resultLimitElement.addEventListener("change", () => {
-            const query = searchInput.value.trim();
 
-            if (!query) {
-                return;
+        document.addEventListener(
+            "keydown",
+            event => {
+                const activeElement =
+                    document.activeElement;
+
+                const isTyping =
+                    activeElement &&
+                    (
+                        activeElement.tagName === "INPUT" ||
+                        activeElement.tagName === "TEXTAREA"
+                    );
+
+                if (isTyping) {
+                    return;
+                }
+
+                if (/^[0-9]$/.test(event.key)) {
+                    submitQuery();
+                }
             }
+        );
 
-            /*
-             * Changing this setting does not perform a search.
-             * It only changes the display of the matches from the
-             * most recently submitted query.
-             */
-            const limit = Math.max(
-                1,
-                parseInt(resultLimitElement.value, 10) || 1
-            );
 
-            const matches = wordPool.filter(word =>
-                word.toLowerCase().includes(query.toLowerCase())
-            );
+        highlightElement.addEventListener(
+            "change",
+            () => {
+                if (lastMatches.length > 0) {
+                    const query =
+                        searchInput.value.trim();
 
-            const displayed = matches.slice(0, limit);
+                    if (query) {
+                        displayResult(
+                            lastMatches[0],
+                            query
+                        );
 
-            if (displayed.length > 0) {
-                displayResult(displayed[0], query);
-                displayMatches(displayed, query);
-            } else {
-                resultsElement.innerHTML = "";
+                        displayMatches(
+                            lastMatches,
+                            query
+                        );
+                    }
+                }
             }
-        });
+        );
 
-        putAllBackButton.addEventListener("click", () => {
-            takeBackEverything();
-        });
+
+        resultLimitElement.addEventListener(
+            "change",
+            () => {
+                const query =
+                    searchInput.value.trim();
+
+                if (!query) {
+                    return;
+                }
+
+                /*
+                 * Changing this setting does not perform
+                 * a search. It only changes the display
+                 * of matches from the current word pool.
+                 */
+                const limit = Math.max(
+                    1,
+                    parseInt(
+                        resultLimitElement.value,
+                        10
+                    ) || 1
+                );
+
+                const matches =
+                    wordPool.filter(word =>
+                        word.toLowerCase().includes(
+                            query.toLowerCase()
+                        )
+                    );
+
+                const displayed =
+                    matches.slice(0, limit);
+
+                if (displayed.length > 0) {
+                    displayResult(
+                        displayed[0],
+                        query
+                    );
+
+                    displayMatches(
+                        displayed,
+                        query
+                    );
+                } else {
+                    resultsElement.innerHTML = "";
+                }
+            }
+        );
+
+
+        putAllBackButton.addEventListener(
+            "click",
+            () => {
+                takeBackEverything();
+            }
+        );
+
 
         loadUsedWords();
         loadWordlist();
